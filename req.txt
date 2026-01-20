@@ -1,4 +1,4 @@
 pandas
 fastai
 requests
-serial
+pyserial

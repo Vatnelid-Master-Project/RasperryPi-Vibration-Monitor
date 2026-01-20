@@ -14,7 +14,6 @@ from fastai.vision.all import *
 from matplotlib import pyplot as plt
 from scipy.signal import ShortTimeFFT, butter, filtfilt
 from scipy.signal.windows import hamming
-from serial import Serial
 
 URL = os.getenv("URL")
 
@@ -37,6 +36,7 @@ def collect_data(
     csv_file = "./mock.csv"
     csv = pd.read_csv(csv_file)
     df = pd.DataFrame(csv)
+    print("Dataframe created...")
     freq = 200
     sec = 10
     dt = 1.0 / freq
@@ -69,6 +69,7 @@ def collect_data(
 
         # Save the sensor values to a dataframe and put the dataframe
         try:
+            print("Dataframe added to queue...")
             df_queue.put(pd.DataFrame(rows), timeout=1)
         except queue.Full:
             pass
@@ -183,7 +184,7 @@ def predict(learner: Learner, img: TensorImage) -> bool:
     # Take the tensorImage as input
 
     threshold = 0.0138
-
+    print("Calculating Loss...")
     # Check whereever the output for the model is under or above the treshhold
     loss = F.mse_loss(img, learner.predict(img)[0])
     print(loss)
@@ -228,8 +229,11 @@ def consumer_thread(
 ):
     while not stop_event.is_set():
         try:
+            print("Fetching dataframe from the queue...")
             df = df_queue.get(timeout=15)
+            print("Creating tensor...")
             tensor_img, png = create_input(df)
+            print("Making prediction...")
             pred_result = predict(learner, tensor_img)
             if pred_result:
                 upload(URL, tensor_img, png)
@@ -248,14 +252,14 @@ def app():
 
     port = '/dev/ttyACM0'
     baudrate = 230400
-
+    print("starting consumer thread...")
     consumer = threading.Thread(
         target=consumer_thread,
         args=(df_queue, learner, stop_event),
         daemon=True,
         name="consumer",
     )
-
+    print("starting collector thread...")
     collector = threading.Thread(
         target=collect_data,
         args=(df_queue, stop_event),

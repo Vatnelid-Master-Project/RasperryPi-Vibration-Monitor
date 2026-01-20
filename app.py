@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import Callable
 
 from dotenv import load_dotenv
+import onnxruntime as ort
 import pandas as pd
 import numpy as np
 import torch
@@ -184,27 +185,30 @@ def create_input(df : pd.DataFrame) -> tuple:
 
     # Use the dataframe to create a spectogram and return it
 
-def predict(model, img: TensorImage) -> bool:
+def predict(img: TensorImage) -> bool:
     # Take the tensorImage as input
 
     threshold = 0.0138
     print("Calculating Loss...")
 
-    img_tensor = torch.as_tensor(img).cpu().float()
+    session = ort.InferenceSession("autoencoder.onnx")
 
-    if img_tensor.max() > 1:
-        img_tensor = img_tensor / 255.0
-    
-    if img_tensor.dim() == 3:
-        img_tensor = img_tensor.unsqueeze(0)
+    img_np = img.cpu().numpy() if hasattr(img, 'cpu') else np.array(img)
+
+    if img_np.ndim == 3:
+        img_np = np.expand_dims(img_np, axis=0)
+
+    img_np = img_np.astype(np.float32)
+
+    print(f"Input shape: {img_np.shape}")
+
+    output = session.run(None, {'input': img_np})
 
     # Check whereever the output for the model is under or above the treshhold
-    with torch.no_grad():
-        pred = model(img_tensor)
-        loss = F.mse_loss(img_tensor, pred)
-        print(loss.item())
-        # Return the result
-        return loss.item() >= threshold
+    loss = np.mean((img_np - output[0]) ** 2 )
+    print(loss)
+    # Return the result
+    return loss >= threshold
 
 
 def upload(url, tensor: TensorImage, pil_img: Image.Image):
@@ -238,7 +242,6 @@ def upload(url, tensor: TensorImage, pil_img: Image.Image):
 
 def consumer_thread(
         df_queue: "queue.Queue[pd.DataFrame]",
-        model,
         stop_event: threading.Event,
 ):
     while not stop_event.is_set():
@@ -248,7 +251,7 @@ def consumer_thread(
             print("Creating tensor...")
             tensor_img, png = create_input(df)
             print("Making prediction...")
-            pred_result = predict(model, tensor_img)
+            pred_result = predict(tensor_img)
             if pred_result:
                 upload(URL, tensor_img, png)
 
@@ -260,18 +263,13 @@ def consumer_thread(
 def app():
     df_queue: "queue.Queue[pd.DataFrame]" = queue.Queue(maxsize=1)
     stop_event = threading.Event()
-    learner = torch.load('autoencoder.pkl', map_location='cpu', weights_only=False)
-    model = learner.model
-
-    model.eval()
-    model.cpu()
 
     port = '/dev/ttyACM0'
     baudrate = 230400
     print("starting consumer thread...")
     consumer = threading.Thread(
         target=consumer_thread,
-        args=(df_queue, model, stop_event),
+        args=(df_queue, stop_event),
         daemon=True,
         name="consumer",
     )

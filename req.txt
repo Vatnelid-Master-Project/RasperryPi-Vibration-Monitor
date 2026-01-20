@@ -2,3 +2,5 @@ pandas
 fastai
 requests
 pyserial
+onnxruntime
+onnxscript

@@ -211,3 +211,6 @@ __marimo__/
 # IDEA
 .idea
 *.zip
+
+# Keep the model outside of git
+autoencoder.*

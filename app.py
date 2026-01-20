@@ -15,6 +15,8 @@ from matplotlib import pyplot as plt
 from scipy.signal import ShortTimeFFT, butter, filtfilt
 from scipy.signal.windows import hamming
 
+load_dotenv()
+
 URL = os.getenv("URL")
 
 def read_sensor(ser : serial.Serial) -> float:
@@ -246,9 +248,10 @@ def consumer_thread(
 def app():
     df_queue: "queue.Queue[pd.DataFrame]" = queue.Queue(maxsize=1)
     stop_event = threading.Event()
-    learner = load_learner('./autoencoder.pkl')
+    learner = load_learner('./autoencoder.pkl', cpu=True)
 
-    load_dotenv()
+    learner.model.eval()
+    learner.model.cpu()
 
     port = '/dev/ttyACM0'
     baudrate = 230400

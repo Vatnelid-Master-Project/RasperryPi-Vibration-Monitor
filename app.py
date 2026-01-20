@@ -21,6 +21,7 @@ from scipy.signal.windows import hamming
 load_dotenv()
 
 URL = os.getenv("URL")
+UNIT_ID = os.getenv("UNIT_ID")
 
 def read_sensor(ser : serial.Serial) -> float:
     try:
@@ -233,7 +234,7 @@ def upload(url, tensor: TensorImage, pil_img: Image.Image):
     }
 
     header = {
-        "X-Unit-Id": str(1)
+        "X-Unit-Id": str(UNIT_ID)
     }
 
     requests.post(url, data=data, files=files, headers=header, timeout=30)

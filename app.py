@@ -1,6 +1,7 @@
 import queue
 import threading
 import time
+import os
 from io import BytesIO
 from typing import Callable
 
@@ -8,9 +9,10 @@ from dotenv import load_dotenv
 import pandas as pd
 import numpy as np
 import torch
+import torch.nn.functional as F
+from fastai.vision.all import *
 import requests
 import serial
-from fastai.vision.all import *
 from matplotlib import pyplot as plt
 from scipy.signal import ShortTimeFFT, butter, filtfilt
 from scipy.signal.windows import hamming
@@ -182,17 +184,27 @@ def create_input(df : pd.DataFrame) -> tuple:
 
     # Use the dataframe to create a spectogram and return it
 
-def predict(learner: Learner, img: TensorImage) -> bool:
+def predict(model, img: TensorImage) -> bool:
     # Take the tensorImage as input
 
     threshold = 0.0138
     print("Calculating Loss...")
-    # Check whereever the output for the model is under or above the treshhold
-    loss = F.mse_loss(img, learner.predict(img)[0])
-    print(loss)
 
-    # Return the result
-    return loss >= threshold
+    img_tensor = torch.as_tensor(img).cpu().float()
+
+    if img_tensor.max() > 1:
+        img_tensor = img_tensor / 255.0
+    
+    if img_tensor.dim() == 3:
+        img_tensor = img_tensor.unsqueeze(0)
+
+    # Check whereever the output for the model is under or above the treshhold
+    with torch.no_grad():
+        pred = model(img_tensor)
+        loss = F.mse_loss(img_tensor, pred)
+        print(loss.item())
+        # Return the result
+        return loss.item() >= threshold
 
 
 def upload(url, tensor: TensorImage, pil_img: Image.Image):
@@ -226,7 +238,7 @@ def upload(url, tensor: TensorImage, pil_img: Image.Image):
 
 def consumer_thread(
         df_queue: "queue.Queue[pd.DataFrame]",
-        learner: Learner,
+        model,
         stop_event: threading.Event,
 ):
     while not stop_event.is_set():
@@ -236,7 +248,7 @@ def consumer_thread(
             print("Creating tensor...")
             tensor_img, png = create_input(df)
             print("Making prediction...")
-            pred_result = predict(learner, tensor_img)
+            pred_result = predict(model, tensor_img)
             if pred_result:
                 upload(URL, tensor_img, png)
 
@@ -248,17 +260,18 @@ def consumer_thread(
 def app():
     df_queue: "queue.Queue[pd.DataFrame]" = queue.Queue(maxsize=1)
     stop_event = threading.Event()
-    learner = load_learner('./autoencoder.pkl', cpu=True)
+    learner = torch.load('autoencoder.pkl', map_location='cpu', weights_only=False)
+    model = learner.model
 
-    learner.model.eval()
-    learner.model.cpu()
+    model.eval()
+    model.cpu()
 
     port = '/dev/ttyACM0'
     baudrate = 230400
     print("starting consumer thread...")
     consumer = threading.Thread(
         target=consumer_thread,
-        args=(df_queue, learner, stop_event),
+        args=(df_queue, model, stop_event),
         daemon=True,
         name="consumer",
     )

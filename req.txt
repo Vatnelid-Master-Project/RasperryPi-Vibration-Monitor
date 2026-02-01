@@ -1,6 +1,7 @@
 pandas
-fastai
 requests
+fastapi
+uvicorn
 pyserial
 onnxruntime
 onnxscript

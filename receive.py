@@ -142,6 +142,7 @@ def create_input(data) -> tuple:
     TARGET_HW = (112, 112)
 
     arr = __create_8_channel(data)
+    png = save_pyplot(arr)
 
     if arr.ndim == 3:
         arr = np.mean(arr, axis=-1)  # (H, W)
@@ -180,7 +181,7 @@ def create_input(data) -> tuple:
     )
 
     tensorImg = TensorImage(t_resized.squeeze(0))  # (3, H, W)
-    png = save_pyplot(arr)
+
 
     # Remove batch dimension, wrap as TensorImage
     return tensorImg, png
@@ -190,7 +191,7 @@ def create_input(data) -> tuple:
 def predict(img: TensorImage) -> bool:
     # Take the tensorImage as input
 
-    threshold = 0.03
+    threshold = 0.034
     print("Calculating Loss...")
 
     session = ort.InferenceSession("autoencoder.onnx")

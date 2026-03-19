@@ -5,3 +5,6 @@ uvicorn
 pyserial
 onnxruntime
 onnxscript
+numpy
+adafruit-ads1x15
+adafruit-circuitpython-ads1x15

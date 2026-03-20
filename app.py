@@ -2,7 +2,7 @@ import queue
 import threading
 import time
 from scipy.signal import iirnotch, filtfilt
-
+import pandas as pd
 import Adafruit_ADS1x15
 
 from receive import process_chunk
@@ -63,6 +63,7 @@ def app():
     buf = []
     print('App Worker Started...')
     chunk_size = 2000
+    i = 0
     while not stop_event.is_set():
         try:
             v = sample_queue.get(timeout=0.5)
@@ -70,6 +71,7 @@ def app():
             continue
         print('Appending to buffer...')
         buf = notch_filter(duffer(v))
+        pd.DataFrame(buf).to_csv(f'./readings/buffer-{i}.csv')
         print(len(buf))
         if len(buf) >= chunk_size:
             chunk = buf[:chunk_size]
@@ -77,6 +79,7 @@ def app():
             # process chunk (make df, spectrogram, etc.)
             # IMPORTANT: processing here, not in ws callback
             process_chunk(chunk)
+        i += 1
 
 worker = threading.Thread(target=assemble, daemon=True)
 app_worker = threading.Thread(target=app, daemon=True)

@@ -25,50 +25,6 @@ load_dotenv()
 URL = os.getenv("URL")
 UNIT_ID = os.getenv("UNIT_ID")
 
-ws = APIRouter(
-    prefix="/ws",
-)
-
-sample_queue = queue.Queue(maxsize=400)
-stop_event = threading.Event()
-
-@ws.websocket("/receive")
-async def receive(
-        web_socket: WebSocket):
-
-    await web_socket.accept()
-
-    try:
-        while True:
-            ## Read array
-            data = await web_socket.receive_json()
-
-            values = data.get("value")
-
-            for v in values:
-                try:
-                    sample_queue.put_nowait(v)
-                except queue.Full:
-                    break
-    except WebSocketDisconnect:
-        print("WebSocket closed")
-
-def assemble(chunk_size=2000):
-    buf = []
-    while not stop_event.is_set():
-        try:
-            v = sample_queue.get(timeout=0.5)
-        except queue.Empty:
-            continue
-        buf.append(v)
-        if len(buf) >= chunk_size:
-            chunk = buf[:chunk_size]
-            del buf[:chunk_size]      # keep extra samples if they arrived fast
-
-            # process chunk (make df, spectrogram, etc.)
-            # IMPORTANT: processing here, not in ws callback
-            process_chunk(chunk)
-
 def process_chunk(chunk):
     # Example: make 1D numpy array, then filter/spectrogram
     tensor_img, pil = create_input(np.asarray(chunk, dtype=float))
@@ -242,6 +198,3 @@ def upload(url, tensor: TensorImage, pil_img: Image.Image):
     requests.post(url, data=data, files=files, headers=header, timeout=30)
     # If the result from the autoencoder is above the threshold
     # Upload for state detection
-
-worker = threading.Thread(target=assemble, daemon=True)
-worker.start()

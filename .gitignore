@@ -214,3 +214,5 @@ __marimo__/
 
 # Keep the model outside of git
 autoencoder.*
+sd-model.onnx
+test_real.csv

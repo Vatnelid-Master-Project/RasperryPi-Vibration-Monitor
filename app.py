@@ -30,7 +30,6 @@ def assemble():
             next_sample += interval
             try:
                 val = adc.read_adc(0, gain=GAIN, data_rate=860)
-                print('Current Value: ' + str(val))
                 result.append(val)
             except Exception as e:
                 print('Exception: ' + str(e))
@@ -42,6 +41,7 @@ def assemble():
             break
 
     try:
+        print("Putting the list to the queue...")
         sample_queue.put(result)
     except queue.Full:
         print("Queue full")
@@ -57,8 +57,11 @@ def app():
             print('Trying to access the queue...')
             v = sample_queue.get(timeout=0.5)
         except queue.Empty:
+            print('Queue empty')
             continue
+        print('Appending to buffer...')
         buf.append(v)
+        print(len(buf))
         if len(buf) >= chunk_size:
             chunk = buf[:chunk_size]
             del buf[:chunk_size]  # keep extra samples if they arrived fast

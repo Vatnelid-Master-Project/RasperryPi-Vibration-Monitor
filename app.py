@@ -60,10 +60,8 @@ def app():
     chunk_size = 2000
     while not stop_event.is_set():
         try:
-            print('Trying to access the queue...')
             v = sample_queue.get(timeout=0.5)
         except queue.Empty:
-            print('Queue empty')
             continue
         print('Appending to buffer...')
         buf = duffer(v)

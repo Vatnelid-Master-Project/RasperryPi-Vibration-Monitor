@@ -1,6 +1,7 @@
 import queue
 import threading
 import time
+from scipy.signal import iirnotch, filtfilt
 
 import Adafruit_ADS1x15
 
@@ -54,6 +55,10 @@ def duffer(values: list):
 
     return buf
 
+def notch_filter(data, freq=50.0, sample_rate=200, quality=30):
+    b, a = iirnotch(freq, quality, sample_rate)
+    return filtfilt(b, a, data)
+
 def app():
     buf = []
     print('App Worker Started...')
@@ -64,11 +69,10 @@ def app():
         except queue.Empty:
             continue
         print('Appending to buffer...')
-        buf = duffer(v)
+        buf = notch_filter(duffer(v))
         print(len(buf))
         if len(buf) >= chunk_size:
             chunk = buf[:chunk_size]
-            del buf[:chunk_size]  # keep extra samples if they arrived fast
 
             # process chunk (make df, spectrogram, etc.)
             # IMPORTANT: processing here, not in ws callback

@@ -147,7 +147,7 @@ def create_input(data) -> tuple:
 def predict(img: TensorImage) -> bool:
     # Take the tensorImage as input
 
-    threshold = 0.034
+    threshold = 0.055
     print("Calculating Loss...")
 
     session = ort.InferenceSession("autoencoder.onnx")

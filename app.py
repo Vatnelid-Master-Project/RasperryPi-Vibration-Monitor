@@ -28,13 +28,14 @@ def assemble():
         now = time.time() * 100
         if (now - next_sample) >= 0:
             next_sample += interval
-            result.append(adc.read_adc(0, gain=GAIN))
+            val = adc.read_adc(0, gain=GAIN)
+            print('Current Value: ' + str(val))
+            result.append(val)
             i += 1
         if i >= segment_length:
             break
 
     try:
-        print('App Worker Started...')
         sample_queue.put(result)
     except queue.Full:
         print("Queue full")

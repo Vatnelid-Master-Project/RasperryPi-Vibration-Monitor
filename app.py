@@ -12,7 +12,7 @@ adc = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1)
 sample_queue = queue.Queue(maxsize=400)
 stop_event = threading.Event()
 segment_length = 10000
-interval = 5000
+interval = 5
 
 def assemble():
     '''
@@ -21,17 +21,23 @@ def assemble():
     '''
     print('Assembling worker started...')
     result = []
-    next_sample = time.time() * 100
     start = time.time() * 1000
+    next_sample = start
     i = 0
     while (time.time() * 1000 - start) <= segment_length:
-        now = time.time() * 100
+        now = time.time() * 1000
         if (now - next_sample) >= 0:
             next_sample += interval
-            val = adc.read_adc(0, gain=GAIN)
-            print('Current Value: ' + str(val))
-            result.append(val)
+            try:
+                val = adc.read_adc(0, gain=GAIN, data_rate=860)
+                print('Current Value: ' + str(val))
+                result.append(val)
+            except Exception as e:
+                print('Exception: ' + str(e))
+                break
             i += 1
+        else:
+            time.sleep(0.001)
         if i >= segment_length:
             break
 
@@ -65,3 +71,6 @@ worker = threading.Thread(target=assemble, daemon=True)
 app_worker = threading.Thread(target=app, daemon=True)
 worker.start()
 app_worker.start()
+
+worker.join()
+app_worker.join()

@@ -216,3 +216,5 @@ __marimo__/
 autoencoder.*
 sd-model.onnx
 test_real.csv
+
+/readings

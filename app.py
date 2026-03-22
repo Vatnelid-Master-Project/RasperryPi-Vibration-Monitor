@@ -7,12 +7,13 @@ import Adafruit_ADS1x15
 
 from receive import process_chunk
 
-GAIN = 16
+GAIN = 8
 adc = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1)
 
 sample_queue = queue.Queue(maxsize=2)
 stop_event = threading.Event()
-segment_length = 10000
+segment_length_dur = 10000
+max_sample_segment = 2000
 interval = 5
 
 def assemble():
@@ -26,20 +27,20 @@ def assemble():
         start = time.time() * 1000
         next_sample = start
         i = 0
-        while (time.time() * 1000 - start) <= segment_length:
+        while (time.time() * 1000 - start) <= segment_length_dur:
             now = time.time() * 1000
             if (now - next_sample) >= 0:
                 next_sample += interval
                 try:
-                    val = adc.read_adc(0, gain=GAIN, data_rate=860)
+                    val = adc.read_adc_difference(0, gain=GAIN, data_rate=860)
                     result.append(val)
                 except Exception as e:
                     print('Exception: ' + str(e))
                     break
                 i += 1
             else:
-                time.sleep(0.001)
-            if i >= segment_length:
+                time.sleep(0.0001)
+            if i >= max_sample_segment:
                 break
 
         try:
@@ -63,15 +64,15 @@ def app():
     buf = []
     print('App Worker Started...')
     chunk_size = 2000
-    i = 0
+    i = 102
     while not stop_event.is_set():
         try:
             v = sample_queue.get(timeout=0.5)
         except queue.Empty:
             continue
         print('Appending to buffer...')
-        buf = notch_filter(duffer(v))
-        pd.DataFrame(buf).to_csv(f'./readings/buffer-{i}.csv')
+        pd.DataFrame(v).to_csv(f'./readings/buffer-{i}.csv')
+        buf = duffer(v)
         print(len(buf))
         if len(buf) >= chunk_size:
             chunk = buf[:chunk_size]

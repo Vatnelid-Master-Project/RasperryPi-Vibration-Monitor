@@ -22,6 +22,8 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 load_dotenv()
 
+matplotlib.use('Agg')
+
 URL = os.getenv("URL")
 UNIT_ID = os.getenv("UNIT_ID")
 
@@ -147,7 +149,7 @@ def create_input(data) -> tuple:
 def predict(img: TensorImage) -> bool:
     # Take the tensorImage as input
 
-    threshold = 0.055
+    threshold = 0.01
     print("Calculating Loss...")
 
     session = ort.InferenceSession("autoencoder.onnx")

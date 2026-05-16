@@ -7,7 +7,7 @@ import Adafruit_ADS1x15
 
 from receive import process_chunk
 
-GAIN = 8
+GAIN = 1
 adc = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1)
 
 sample_queue = queue.Queue(maxsize=2)
@@ -71,7 +71,7 @@ def app():
         except queue.Empty:
             continue
         print('Appending to buffer...')
-        pd.DataFrame(v).to_csv(f'./readings/buffer-{i}.csv')
+        # pd.DataFrame(v).to_csv(f'./readings/buffer-{i}.csv')
         buf = duffer(v)
         print(len(buf))
         if len(buf) >= chunk_size:

@@ -14,11 +14,10 @@ import torch.nn.functional as F
 from fastai.vision.all import *
 import requests
 import serial
-from fastapi import APIRouter, Depends, FastAPI
 from matplotlib import pyplot as plt
+import matplotlib
 from scipy.signal import ShortTimeFFT, butter, filtfilt
 from scipy.signal.windows import hamming
-from starlette.websockets import WebSocket, WebSocketDisconnect
 
 load_dotenv()
 

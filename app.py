@@ -4,12 +4,15 @@ import time
 from scipy.signal import iirnotch, filtfilt
 import pandas as pd
 import Adafruit_ADS1x15
-
+print("Setting Gain")
 from receive import process_chunk
 
+
 GAIN = 1
+print("Config ADC")
 adc = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1)
 
+print("Config Queue")
 sample_queue = queue.Queue(maxsize=2)
 stop_event = threading.Event()
 segment_length_dur = 10000
@@ -71,7 +74,8 @@ def app():
         except queue.Empty:
             continue
         print('Appending to buffer...')
-        # pd.DataFrame(v).to_csv(f'./readings/buffer-{i}.csv')
+        #dt = datetime.now().timestamp()
+        #pd.DataFrame(v).to_csv(f'./readings/buffer-{dt}.csv')
         buf = duffer(v)
         print(len(buf))
         if len(buf) >= chunk_size:
@@ -82,6 +86,7 @@ def app():
             process_chunk(chunk)
         i += 1
 
+print("Starting Workers")
 worker = threading.Thread(target=assemble, daemon=True)
 app_worker = threading.Thread(target=app, daemon=True)
 worker.start()

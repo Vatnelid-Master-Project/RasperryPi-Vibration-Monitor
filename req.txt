@@ -4,5 +4,10 @@ pyserial
 onnxruntime
 onnxscript
 numpy
+scipy
+dotenv
+torch
+fastai
+matplotlib
 adafruit-ads1x15
 adafruit-circuitpython-ads1x15
